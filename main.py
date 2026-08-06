@@ -54,8 +54,9 @@ reference_ranges = {
   }
 }
 st.title("HemoIQ:- Blood Test Scanner")
-st.sidebar.write("""
-HemoIQ - Blood Test Analyser
+st.sidebar.title("""
+HemoIQ - Blood Test Analyser""")
+st.sidebar.success("""
 Upload your blood test in PDF format
 Values will be parsed and full report of 
 patient's health will be given
