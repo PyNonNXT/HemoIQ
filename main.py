@@ -43,11 +43,11 @@ if uploaded_file is not None:
                 cell is not None and str(cell).strip() 
                 for cell in row ) 
             ]
-        if cleaned_table:
-          all_tables.append( 
-            { "page": page_number,
-              "table_number": table_number, 
-             "data": cleaned_table })
+            if cleaned_table:
+              all_tables.append( 
+                { "page": page_number,
+                  "table_number": table_number, 
+                  "data": cleaned_table })
         st.divider() 
         st.header("📄 Extracted Text")
         if all_text: 
