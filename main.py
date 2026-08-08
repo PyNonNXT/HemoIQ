@@ -241,7 +241,7 @@ if uploaded_file is not None:
         )
 
 
-if parsed_results:
+  if parsed_results:
 
     results_df = pd.DataFrame(
         parsed_results
