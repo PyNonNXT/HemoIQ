@@ -1,6 +1,9 @@
 import streamlit as st
 import pdfplumber as pdf
 import pandas as pd
+st.set_page_config(
+  page_title = "HemoIQ - Blood test scanner",
+  page_icon="⚕️")
 reference_ranges = {
   "male_adult" : {
     "Haemoglobin": (13.0, 17.0),
