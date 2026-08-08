@@ -98,7 +98,7 @@ if uploaded_file is not None:
   except Exception as e: 
     st.error("There was a problem reading the PDF.")
     st.exception(e)
-  ```python
+ 
 st.divider()
 
 st.header("🩸 Blood Test Analysis")
