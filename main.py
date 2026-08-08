@@ -99,13 +99,13 @@ if uploaded_file is not None:
     st.error("There was a problem reading the PDF.")
     st.exception(e)
  
-st.divider()
+  st.divider()
 
-st.header("🩸 Blood Test Analysis")
+  st.header("🩸 Blood Test Analysis")
 
-parsed_results = []
+  parsed_results = []
 
-for table_info in all_tables:
+  for table_info in all_tables:
 
     table_data = table_info["data"]
 
