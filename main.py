@@ -99,7 +99,8 @@ if uploaded_file is not None:
         st.divider() 
         st.header("📄 Extracted Text")
         if all_text: 
-          combined_text = "\n".join(all_text) with st.expander(
+          combined_text = "\n".join(all_text) 
+          with st.expander(
             "Show extracted text", 
             expanded=True ):
               st.text_area( 
