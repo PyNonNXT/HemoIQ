@@ -36,13 +36,13 @@ if uploaded_file is not None:
             start=1 ): 
            if not table: 
             continue
-        cleaned_table = [
-          row 
-          for row in table 
-          if row and any( 
-            cell is not None and str(cell).strip() 
-            for cell in row ) 
-        ]
+            cleaned_table = [
+              row 
+              for row in table
+              if row and any( 
+                cell is not None and str(cell).strip() 
+                for cell in row ) 
+            ]
         if cleaned_table:
           all_tables.append( 
             { "page": page_number,
