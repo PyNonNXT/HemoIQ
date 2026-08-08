@@ -1,6 +1,9 @@
 import streamlit as st
-import pdfplumber as pdf
+import pdfplumber as pp
 import pandas as pd
+import re
+import io
+from typing import Optional, Dict, List, Tuple
 st.set_page_config(
   page_title = "HemoIQ - Blood test scanner",
   page_icon="⚕️")
@@ -17,7 +20,7 @@ uploaded_file = st.file_uploader("Upload your blood test PDF", type=["pdf"], hel
 if uploaded_file is not None: 
   st.success(f"Uploaded: {uploaded_file.name}")
   try:
-    with pdfplumber.open(uploaded_file) as pdf:
+    with pp.open(uploaded_file) as pdf:
       st.write(f"**Number of pages:** {len(pdf.pages)}")
       all_text = [] 
       all_tables = []
