@@ -4,6 +4,9 @@ import pandas as pd
 import re
 import io
 from typing import Optional, Dict, List, Tuple
+all_text = []
+all_tables = []
+parsed_results = []
 st.set_page_config(
   page_title = "HemoIQ - Blood test scanner",
   page_icon="⚕️")
