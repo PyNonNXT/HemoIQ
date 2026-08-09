@@ -4,11 +4,12 @@ import json
 import pandas as pd
 import openai
 import re
+import os
 import io
 from typing import Optional, Dict, List, Tuple
 client = openai.OpenAI(
-   base_url="https://api.llm7.io/v1",
-   api_key="unused" 
+   base_url="https://openrouter.ai/api/v1",
+   api_key=os.getenv("KEY")
 )
 all_text = []
 all_tables = []
@@ -790,12 +791,12 @@ Blood-test data:
 """
 
         conclusion = client.chat.completions.create(
-            model="gpt-oss-20b",
+            model="openai/gpt-oss-20b",
             messages=[
-               {"role": "user", "content": "Tell me a short story about a brave squirrel."}
+               {"role": "user", "content": prompt}
             ]
 )
-
+        conclusion = response.choices[0].message.content
         st.write(conclusion)
 else:
 
