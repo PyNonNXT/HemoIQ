@@ -783,6 +783,7 @@ Requirements:
 - Do not invent missing information.
 - Clearly state when information is insufficient.
 - End with a concise overall conclusion.
+- Recommend sensible dietary changes as well as appropriate medication while mentioning to consider the information as suggestive.
 - Recommend discussing concerning findings with a qualified healthcare professional.
 
 Blood-test data:
