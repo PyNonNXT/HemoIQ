@@ -11,11 +11,11 @@ st.set_page_config(
 st.title("HemoIQ:- Blood Test Scanner")
 st.sidebar.title("""
 HemoIQ - Blood Test Analyser""")
-st.sidebar.success("""
-Upload your blood test in PDF format
-Values will be parsed and full report of 
-patient's health will be given
-""")
+st.sidebar.success(
+"Upload your blood test in PDF format"
+"Values will be parsed and full report of"
+"patient's health will be given"
+)
 uploaded_file = st.file_uploader("Upload your blood test PDF", type=["pdf"], help="Upload a PDF laboratory/blood test report." )
 if uploaded_file is not None: 
   st.success(f"Uploaded: {uploaded_file.name}")
@@ -102,7 +102,6 @@ if uploaded_file is not None:
   st.divider()
 
   st.header("🩸 Blood Test Analysis")
-
   parsed_results = []
 
   for table_info in all_tables:
@@ -113,12 +112,14 @@ if uploaded_file is not None:
         continue
 
     headers = [
-        str(cell).strip() if cell else f"Column {i + 1}"
+        str(cell).strip()
+        if cell is not None and str(cell).strip()
+        else f"Column {i + 1}"
         for i, cell in enumerate(table_data[0])
     ]
 
     normalized_headers = [
-        header.lower()
+        header.lower().strip()
         for header in headers
     ]
 
@@ -130,46 +131,50 @@ if uploaded_file is not None:
 
     for i, header in enumerate(normalized_headers):
 
-        if any(
+        if test_index is None and any(
             x in header
             for x in [
                 "test",
+                "test name",
                 "investigation",
                 "parameter",
                 "analyte",
                 "description"
             ]
         ):
-            if test_index is None:
-                test_index = i
+            test_index = i
 
-        if any(
+        if result_index is None and any(
             x in header
             for x in [
                 "result",
                 "value",
                 "reading",
-                "observed"
+                "observed",
+                "result value"
             ]
         ):
-            if result_index is None:
-                result_index = i
+            result_index = i
 
-        if "unit" in header:
+        if unit_index is None and (
+            "unit" in header
+        ):
             unit_index = i
 
-        if any(
+        if reference_index is None and any(
             x in header
             for x in [
                 "reference",
                 "ref range",
+                "reference range",
                 "normal range",
+                "biological reference",
                 "range"
             ]
         ):
             reference_index = i
 
-        if any(
+        if flag_index is None and any(
             x in header
             for x in [
                 "flag",
@@ -187,7 +192,7 @@ if uploaded_file is not None:
                 len(headers) - len(row)
             )
 
-        if len(row) > len(headers):
+        elif len(row) > len(headers):
             row = row[:len(headers)]
 
         row = [
@@ -229,61 +234,322 @@ if uploaded_file is not None:
             else ""
         )
 
-        parsed_results.append(
-            {
-                "Test": test_name,
-                "Result": result,
-                "Unit": unit,
-                "Reference Range": reference,
-                "Flag": flag,
-                "Page": table_info["page"]
-            }
+        parsed_results.append({
+            "Test": test_name,
+            "Result": result,
+            "Unit": unit,
+            "Reference Range": reference,
+            "Flag": flag,
+            "Page": table_info["page"],
+            "Source": "Table"
+        })
+
+
+for text_block in all_text:
+
+    lines = text_block.splitlines()
+
+    current_page = None
+
+    for line in lines:
+
+        line = line.strip()
+
+        if not line:
+            continue
+
+        page_match = re.search(
+            r"PAGE\s+(\d+)",
+            line,
+            re.IGNORECASE
         )
 
+        if page_match:
+            current_page = int(
+                page_match.group(1)
+            )
+            continue
 
-  if parsed_results:
+        if not re.search(
+            r"\d",
+            line
+        ):
+            continue
+
+        normalized_line = re.sub(
+            r"\s+",
+            " ",
+            line
+        ).strip()
+
+        reference = ""
+
+        reference_match = re.search(
+            r"(-?\d+(?:\.\d+)?\s*"
+            r"(?:-|–|—)\s*"
+            r"-?\d+(?:\.\d+)?)",
+            normalized_line
+        )
+
+        if reference_match:
+
+            reference = (
+                reference_match.group(1)
+            )
+
+        comparison_match = re.search(
+            r"(<=|>=|<|>)\s*"
+            r"-?\d+(?:\.\d+)?",
+            normalized_line
+        )
+
+        if not reference and comparison_match:
+            reference = comparison_match.group(0)
+
+        numbers = list(
+            re.finditer(
+                r"(?<![A-Za-z])"
+                r"-?\d+(?:\.\d+)?",
+                normalized_line
+            )
+        )
+
+        if not numbers:
+            continue
+
+        result_match = numbers[0]
+
+        result = result_match.group()
+
+        test_name = normalized_line[
+            :result_match.start()
+        ].strip()
+
+        if not test_name:
+            continue
+
+        test_name = re.sub(
+            r"^[\d\W]+",
+            "",
+            test_name
+        )
+
+        test_name = re.sub(
+            r"[:|]+$",
+            "",
+            test_name
+        ).strip()
+
+        ignored_lines = [
+            "page",
+            "patient",
+            "patient name",
+            "name",
+            "age",
+            "sex",
+            "gender",
+            "date",
+            "address",
+            "phone",
+            "email",
+            "laboratory",
+            "laboratory report",
+            "blood test report",
+            "reference range",
+            "normal range",
+            "result",
+            "results",
+            "test",
+            "investigation",
+            "parameter"
+        ]
+
+        if test_name.lower() in ignored_lines:
+            continue
+
+        if len(test_name) < 2:
+            continue
+
+        after_result = normalized_line[
+            result_match.end():
+        ].strip()
+
+        unit = ""
+
+        unit_patterns = [
+            r"mg/dL",
+            r"g/dL",
+            r"g/L",
+            r"mg/L",
+            r"mmol/L",
+            r"mEq/L",
+            r"µmol/L",
+            r"umol/L",
+            r"nmol/L",
+            r"pmol/L",
+            r"IU/L",
+            r"U/L",
+            r"IU/mL",
+            r"U/mL",
+            r"ng/mL",
+            r"pg/mL",
+            r"ng/dL",
+            r"pg/dL",
+            r"fL",
+            r"pg",
+            r"/µL",
+            r"/uL",
+            r"/mm3",
+            r"/mm³",
+            r"%",
+        ]
+
+        for pattern in unit_patterns:
+
+            unit_match = re.search(
+                pattern,
+                after_result,
+                re.IGNORECASE
+            )
+
+            if unit_match:
+
+                unit = unit_match.group()
+
+                break
+
+        flag = ""
+
+        flag_match = re.search(
+            r"\b(HH|LL|H|L|N|High|Low|Normal)\b",
+            after_result,
+            re.IGNORECASE
+        )
+
+        if flag_match:
+            flag = flag_match.group()
+
+        parsed_results.append({
+            "Test": test_name,
+            "Result": result,
+            "Unit": unit,
+            "Reference Range": reference,
+            "Flag": flag,
+            "Page": current_page,
+            "Source": "Text"
+        })
+
+
+if parsed_results:
 
     results_df = pd.DataFrame(
         parsed_results
     )
+
+    results_df["Test"] = (
+        results_df["Test"]
+        .astype(str)
+        .str.replace(
+            r"\s+",
+            " ",
+            regex=True
+        )
+        .str.strip()
+    )
+
+    results_df = results_df[
+        results_df["Test"].str.len() >= 2
+    ]
 
     results_df = results_df.drop_duplicates(
         subset=[
             "Test",
             "Result",
             "Unit"
-        ]
-    )
+        ],
+        keep="first"
+    ).reset_index(drop=True)
+
+    st.divider()
+
+    st.header("🩸 Blood Test Analysis")
 
     st.success(
         f"Detected {len(results_df)} laboratory results."
     )
 
-    st.subheader("📋 Parsed Results")
+    total_tests = len(results_df)
 
-    st.dataframe(
-        results_df,
-        use_container_width=True,
-        hide_index=True
-    )
+    flagged_high = results_df[
+        results_df["Flag"].str.contains(
+            r"high|^H$|^HH$",
+            case=False,
+            na=False,
+            regex=True
+        )
+    ]
+
+    flagged_low = results_df[
+        results_df["Flag"].str.contains(
+            r"low|^L$|^LL$",
+            case=False,
+            na=False,
+            regex=True
+        )
+    ]
+
+    flagged_normal = results_df[
+        results_df["Flag"].str.contains(
+            r"normal|^N$",
+            case=False,
+            na=False,
+            regex=True
+        )
+    ]
+
+    summary_col1, summary_col2, summary_col3, summary_col4 = st.columns(4)
+
+    with summary_col1:
+        st.metric(
+            "Total Tests",
+            total_tests
+        )
+
+    with summary_col2:
+        st.metric(
+            "🔴 High",
+            len(flagged_high)
+        )
+
+    with summary_col3:
+        st.metric(
+            "🔵 Low",
+            len(flagged_low)
+        )
+
+    with summary_col4:
+        st.metric(
+            "🟢 Normal",
+            len(flagged_normal)
+        )
 
     st.divider()
 
-    st.subheader("🔎 Filter Results")
+    st.subheader("📋 Parsed Results")
 
-    filter_col1, filter_col2 = st.columns(2)
+    search_col, filter_col = st.columns(2)
 
-    with filter_col1:
+    with search_col:
 
-        test_search = st.text_input(
-            "Search for a test",
+        search_test = st.text_input(
+            "Search test",
             placeholder="e.g. Hemoglobin"
         )
 
-    with filter_col2:
+    with filter_col:
 
-        flag_filter = st.selectbox(
-            "Filter by flag",
+        status_filter = st.selectbox(
+            "Filter results",
             [
                 "All",
                 "High",
@@ -295,23 +561,57 @@ if uploaded_file is not None:
 
     filtered_df = results_df.copy()
 
-    if test_search:
+    if search_test:
 
         filtered_df = filtered_df[
             filtered_df["Test"].str.contains(
-                test_search,
+                search_test,
                 case=False,
                 na=False
             )
         ]
 
-    if flag_filter != "All":
+    if status_filter == "High":
 
         filtered_df = filtered_df[
             filtered_df["Flag"].str.contains(
-                flag_filter,
+                r"high|^H$|^HH$",
                 case=False,
-                na=False
+                na=False,
+                regex=True
+            )
+        ]
+
+    elif status_filter == "Low":
+
+        filtered_df = filtered_df[
+            filtered_df["Flag"].str.contains(
+                r"low|^L$|^LL$",
+                case=False,
+                na=False,
+                regex=True
+            )
+        ]
+
+    elif status_filter == "Normal":
+
+        filtered_df = filtered_df[
+            filtered_df["Flag"].str.contains(
+                r"normal|^N$",
+                case=False,
+                na=False,
+                regex=True
+            )
+        ]
+
+    elif status_filter == "Unknown":
+
+        filtered_df = filtered_df[
+            ~filtered_df["Flag"].str.contains(
+                r"high|low|normal|^H$|^HH$|^L$|^LL$|^N$",
+                case=False,
+                na=False,
+                regex=True
             )
         ]
 
@@ -323,76 +623,11 @@ if uploaded_file is not None:
 
     st.divider()
 
-    st.subheader("📊 Quick Summary")
-
-    total = len(results_df)
-
-    high_count = len(
-        results_df[
-            results_df["Flag"].str.contains(
-                "high|H|HH",
-                case=False,
-                na=False,
-                regex=True
-            )
-        ]
-    )
-
-    low_count = len(
-        results_df[
-            results_df["Flag"].str.contains(
-                "low|L|LL",
-                case=False,
-                na=False,
-                regex=True
-            )
-        ]
-    )
-
-    normal_count = len(
-        results_df[
-            results_df["Flag"].str.contains(
-                "normal|N",
-                case=False,
-                na=False,
-                regex=True
-            )
-        ]
-    )
-
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        st.metric(
-            "Total Tests",
-            total
-        )
-
-    with col2:
-        st.metric(
-            "🔴 High",
-            high_count
-        )
-
-    with col3:
-        st.metric(
-            "🔵 Low",
-            low_count
-        )
-
-    with col4:
-        st.metric(
-            "🟢 Normal",
-            normal_count
-        )
-
-    st.divider()
-
     st.subheader("⚠️ Results Requiring Attention")
 
     abnormal_df = results_df[
         results_df["Flag"].str.contains(
-            "high|low|H|L",
+            r"high|low|^H$|^HH$|^L$|^LL$",
             case=False,
             na=False,
             regex=True
@@ -402,93 +637,109 @@ if uploaded_file is not None:
     if abnormal_df.empty:
 
         st.success(
-            "No explicitly flagged abnormal results were found."
+            "No explicitly flagged abnormal results "
+            "were detected."
         )
 
     else:
 
         for _, row in abnormal_df.iterrows():
 
-            flag = row["Flag"].upper()
-
-            message = (
-                f"**{row['Test']}**: "
-                f"{row['Result']} {row['Unit']} "
-                f"({flag})"
+            result_text = (
+                f"**{row['Test']}** — "
+                f"{row['Result']} "
+                f"{row['Unit']} "
+                f"({row['Flag']})"
             )
 
-            if "H" in flag:
+            if re.search(
+                r"high|^H$|^HH$",
+                row["Flag"],
+                re.IGNORECASE
+            ):
 
-                st.error(message)
-
-            elif "L" in flag:
-
-                st.info(message)
+                st.error(
+                    result_text
+                )
 
             else:
 
-                st.warning(message)
+                st.info(
+                    result_text
+                )
 
     st.divider()
 
-    st.subheader("📈 Test Details")
+    st.subheader("🔬 Individual Test")
+
+    test_names = results_df[
+        "Test"
+    ].tolist()
 
     selected_test = st.selectbox(
         "Select a test",
-        results_df["Test"].tolist()
+        test_names
     )
 
-    selected_row = results_df[
+    selected_rows = results_df[
         results_df["Test"]
         == selected_test
-    ].iloc[0]
+    ]
 
-    col1, col2, col3 = st.columns(3)
+    if not selected_rows.empty:
 
-    with col1:
+        selected = selected_rows.iloc[0]
 
-        st.metric(
-            "Result",
-            selected_row["Result"]
+        detail_col1, detail_col2, detail_col3 = st.columns(3)
+
+        with detail_col1:
+
+            st.metric(
+                "Result",
+                f"{selected['Result']} "
+                f"{selected['Unit']}".strip()
+            )
+
+        with detail_col2:
+
+            st.metric(
+                "Flag",
+                selected["Flag"]
+                if selected["Flag"]
+                else "Not flagged"
+            )
+
+        with detail_col3:
+
+            st.metric(
+                "Page",
+                selected["Page"]
+                if selected["Page"]
+                else "Unknown"
+            )
+
+        st.write(
+            f"**Reference Range:** "
+            f"{selected['Reference Range']}"
+            if selected["Reference Range"]
+            else "**Reference Range:** Not provided"
         )
 
-    with col2:
-
-        st.metric(
-            "Unit",
-            selected_row["Unit"]
-            or "Not available"
+        st.write(
+            f"**Source:** {selected['Source']}"
         )
-
-    with col3:
-
-        st.metric(
-            "Flag",
-            selected_row["Flag"]
-            or "Not flagged"
-        )
-
-    st.write(
-        f"**Reference range:** "
-        f"{selected_row['Reference Range'] or 'Not provided'}"
-    )
-
-    st.write(
-        f"**Source page:** "
-        f"{selected_row['Page']}"
-    )
 
     st.divider()
 
-    st.subheader("⬇️ Export")
+    st.subheader("⬇️ Export Results")
 
-    csv = results_df.to_csv(
+    export_data = results_df.to_csv(
         index=False
     ).encode("utf-8")
 
     st.download_button(
-        "Download Results as CSV",
-        data=csv,
+        label="Download CSV",
+        data=export_data,
         file_name="blood_test_results.csv",
         mime="text/csv"
     )
@@ -496,9 +747,10 @@ if uploaded_file is not None:
 else:
 
     st.warning(
-        "No structured laboratory results "
-        "could be identified from the extracted tables."
+        "No laboratory results could be identified "
+        "from the extracted PDF text or tables."
     )
+
 
 
 st.write("BKB, 2026, all rights reserved")
