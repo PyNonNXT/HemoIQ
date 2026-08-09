@@ -790,7 +790,7 @@ Blood-test data:
 """
 
         conclusion = client.chat.completions.create(
-            model="gpt-4o-mini-2024-07-18",
+            model="gpt-5-mini",
             messages=[
                {"role": "user", "content": "Tell me a short story about a brave squirrel."}
             ]
