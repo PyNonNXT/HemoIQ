@@ -1,5 +1,6 @@
 import streamlit as st
 import pdfplumber as pp
+import json
 import pandas as pd
 import openai
 import re
