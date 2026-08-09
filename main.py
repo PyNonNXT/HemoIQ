@@ -788,6 +788,8 @@ Requirements:
 Blood-test data:
 
 {results_text}
+
+If the data seems to not be from a blood test, respond in no more than two lines.
 """
 
         response = client.chat.completions.create(
@@ -797,7 +799,7 @@ Blood-test data:
             ]
 )
         conclusion = response.choices[0].message.content
-        st.write(conclusion)
+        st.info(conclusion)
 else:
 
     st.warning(
@@ -806,5 +808,6 @@ else:
     )
 
 
-
+st.divider()
+st.write("This application is only intended for educational purposes. Do not substitute professional medical advice with the information \n provided by this application")
 st.write("BKB, 2026, all rights reserved")
