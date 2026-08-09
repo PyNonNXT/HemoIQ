@@ -1,9 +1,14 @@
 import streamlit as st
 import pdfplumber as pp
 import pandas as pd
+import openai
 import re
 import io
 from typing import Optional, Dict, List, Tuple
+client = openai.OpenAI(
+   base_url="https://api.llm7.io/v1",
+   api_key="unused" 
+)
 all_text = []
 all_tables = []
 parsed_results = []
@@ -746,7 +751,51 @@ if parsed_results:
         file_name="blood_test_results.csv",
         mime="text/csv"
     )
+    st.subheader("🧠 AI Conclusion")
 
+if st.button("Generate Conclusion"):
+
+    with st.spinner("Analysing blood-test results..."):
+
+        results_json = results_df.to_dict(
+            orient="records"
+        )
+
+        results_text = json.dumps(
+            results_json,
+            indent=2
+        )
+
+        prompt = f"""
+You are a laboratory-report explanation assistant.
+
+Analyse the complete blood-test dataset below.
+
+Requirements:
+- Consider the results together, not only individually.
+- Use the reference ranges supplied in the report.
+- Explain abnormal findings in simple language.
+- Mention important normal findings when relevant.
+- Do not diagnose diseases.
+- Do not prescribe medication.
+- Do not invent missing information.
+- Clearly state when information is insufficient.
+- End with a concise overall conclusion.
+- Recommend discussing concerning findings with a qualified healthcare professional.
+
+Blood-test data:
+
+{results_text}
+"""
+
+        conclusion = client.chat.completions.create(
+            model="gpt-4o-mini-2024-07-18",
+            messages=[
+               {"role": "user", "content": "Tell me a short story about a brave squirrel."}
+            ]
+)
+
+        st.write(conclusion)
 else:
 
     st.warning(
