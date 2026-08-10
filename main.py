@@ -7,6 +7,30 @@ import re
 import os
 import io
 from typing import Optional, Dict, List, Tuple
+def calculate_flag(result, reference_range):
+    try:
+        value = float(str(result).replace(",", "").strip())
+
+        match = re.search(
+            r"(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)",
+            str(reference_range)
+        )
+
+        if not match:
+            return "Unknown"
+
+        low = float(match.group(1))
+        high = float(match.group(2))
+
+        if value < low:
+            return "Low"
+        elif value > high:
+            return "High"
+        else:
+            return "Normal"
+
+    except (ValueError, TypeError):
+        return "Unknown"
 client = openai.OpenAI(
    base_url="https://openrouter.ai/api/v1",
    api_key=os.getenv("KEY")
@@ -242,6 +266,10 @@ if uploaded_file is not None:
             row[flag_index]
             if flag_index is not None
             else ""
+        )
+        calculated_flag = calculate_flag(
+             result,
+             reference_range
         )
 
         parsed_results.append({
