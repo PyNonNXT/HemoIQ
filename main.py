@@ -7,15 +7,13 @@ import re
 import os
 import io
 from typing import Optional, Dict, List, Tuple
-def preprocess_numeric(text):
+def clean_numeric(text):
     return re.sub(r"[^0-9.\-–≤≥]", "", str(text))
 
 def calculate_flag(result, reference_range):
     try:
-        value_str = preprocess_numeric(result)
-        value = float(value_str)
-
-        ref_str = preprocess_numeric(reference_range)
+        value = float(clean_numeric(result))
+        ref_str = clean_numeric(reference_range)
 
         match = re.search(r"(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)", ref_str)
         if match:
@@ -30,10 +28,10 @@ def calculate_flag(result, reference_range):
                 return "Normal"
 
         if "≤" in reference_range:
-            limit = float(preprocess_numeric(reference_range))
+            limit = float(clean_numeric(reference_range))
             return "High" if value > limit else "Normal"
         elif "≥" in reference_range:
-            limit = float(preprocess_numeric(reference_range))
+            limit = float(clean_numeric(reference_range))
             return "Low" if value < limit else "Normal"
 
         return "Unknown"
