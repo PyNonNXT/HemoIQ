@@ -12,33 +12,109 @@ def clean_numeric(text):
 
 def calculate_flag(result, reference_range):
     try:
-        value = float(clean_numeric(result))
-        ref_str = clean_numeric(reference_range)
+        result_str = str(result).strip()
+        reference_str = str(reference_range).strip()
 
-        match = re.search(r"(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)", ref_str)
-        if match:
-            low = float(match.group(1))
-            high = float(match.group(2))
+        result_match = re.search(
+            r"-?\d+(?:\.\d+)?",
+            result_str
+        )
+
+        if not result_match:
+            return "Unknown"
+
+        value = float(result_match.group())
+
+        if not reference_str:
+            return "Unknown"
+
+
+        reference_str = reference_str.replace("—", "-")
+        reference_str = reference_str.replace("–", "-")
+
+
+        reference_str = re.sub(
+            r"\s+",
+            "",
+            reference_str
+        )
+
+
+        range_match = re.search(
+            r"(-?\d+(?:\.\d+)?)-(-?\d+(?:\.\d+)?)",
+            reference_str
+        )
+
+        if range_match:
+            low = float(range_match.group(1))
+            high = float(range_match.group(2))
+
             low, high = min(low, high), max(low, high)
+
             if value < low:
                 return "Low"
+
             elif value > high:
                 return "High"
+
             else:
                 return "Normal"
 
-        if "≤" in reference_range:
-            limit = float(clean_numeric(reference_range))
+
+        less_equal_match = re.search(
+            r"(?:≤|<=)(-?\d+(?:\.\d+)?)",
+            reference_str
+        )
+
+        if less_equal_match:
+            limit = float(
+                less_equal_match.group(1)
+            )
+
             return "High" if value > limit else "Normal"
-        elif "≥" in reference_range:
-            limit = float(clean_numeric(reference_range))
+
+
+        greater_equal_match = re.search(
+            r"(?:≥|>=)(-?\d+(?:\.\d+)?)",
+            reference_str
+        )
+
+        if greater_equal_match:
+            limit = float(
+                greater_equal_match.group(1)
+            )
+
             return "Low" if value < limit else "Normal"
 
+        less_match = re.search(
+            r"<(-?\d+(?:\.\d+)?)",
+            reference_str
+        )
+
+        if less_match:
+            limit = float(
+                less_match.group(1)
+            )
+
+            return "High" if value >= limit else "Normal"
+
+    
+        greater_match = re.search(
+            r">(-?\d+(?:\.\d+)?)",
+            reference_str
+        )
+
+        if greater_match:
+            limit = float(
+                greater_match.group(1)
+            )
+
+            return "Low" if value <= limit else "Normal"
+
         return "Unknown"
 
-    except (ValueError, TypeError):
+    except (ValueError, TypeError, AttributeError):
         return "Unknown"
-
 
 client = openai.OpenAI(
    base_url="https://openrouter.ai/api/v1",
@@ -278,7 +354,7 @@ if uploaded_file is not None:
         )
         calculated_flag = calculate_flag(
              result,
-             reference_range
+             reference
         )
 
         parsed_results.append({
