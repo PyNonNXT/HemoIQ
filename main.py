@@ -12,22 +12,30 @@ def calculate_flag(result, reference_range):
         value = float(str(result).replace(",", "").strip())
 
         match = re.search(
-            r"(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)",
+            r"(\d+(?:\.\d+)?)\s*(?:[-–]|to)\s*(\d+(?:\.\d+)?)",
             str(reference_range)
         )
 
-        if not match:
-            return "Unknown"
+        if match:
+            low = float(match.group(1))
+            high = float(match.group(2))
+            low, high = min(low, high), max(low, high)
 
-        low = float(match.group(1))
-        high = float(match.group(2))
+            if value < low:
+                return "Low"
+            elif value > high:
+                return "High"
+            else:
+                return "Normal"
 
-        if value < low:
-            return "Low"
-        elif value > high:
-            return "High"
-        else:
-            return "Normal"
+        if "≤" in reference_range:
+            limit = float(reference_range.replace("≤", "").strip())
+            return "High" if value > limit else "Normal"
+        elif "≥" in reference_range:
+            limit = float(reference_range.replace("≥", "").strip())
+            return "Low" if value < limit else "Normal"
+
+        return "Unknown"
 
     except (ValueError, TypeError):
         return "Unknown"
