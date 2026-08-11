@@ -7,14 +7,17 @@ import re
 import os
 import io
 from typing import Optional, Dict, List, Tuple
+def preprocess_numeric(text):
+    return re.sub(r"[^0-9.\-–≤≥]", "", str(text))
+
 def calculate_flag(result, reference_range):
     try:
-        value = float(str(result).replace(",", "").strip())
+        value_str = preprocess_numeric(result)
+        value = float(value_str)
 
-        match = re.search(
-            r"(\d+(?:\.\d+)?)\s*(?:[-–]|to)\s*(\d+(?:\.\d+)?)",
-            str(reference_range)
-        )
+        ref_str = preprocess_numeric(reference_range)
+
+        match = re.search(r"(\d+(?:\.\d+)?)\s*(?:[-–])\s*(\d+(?:\.\d+)?)", ref_str)
 
         if match:
             low = float(match.group(1))
@@ -29,16 +32,17 @@ def calculate_flag(result, reference_range):
                 return "Normal"
 
         if "≤" in reference_range:
-            limit = float(reference_range.replace("≤", "").strip())
+            limit = float(preprocess_numeric(reference_range))
             return "High" if value > limit else "Normal"
         elif "≥" in reference_range:
-            limit = float(reference_range.replace("≥", "").strip())
+            limit = float(preprocess_numeric(reference_range))
             return "Low" if value < limit else "Normal"
 
         return "Unknown"
 
     except (ValueError, TypeError):
         return "Unknown"
+
 client = openai.OpenAI(
    base_url="https://openrouter.ai/api/v1",
    api_key=os.getenv("KEY")
