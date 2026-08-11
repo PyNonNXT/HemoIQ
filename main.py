@@ -541,16 +541,10 @@ for text_block in all_text:
 
                 break
 
-        flag = ""
-
-        flag_match = re.search(
-            r"\b(HH|LL|H|L|N|High|Low|Normal)\b",
-            after_result,
-            re.IGNORECASE
+        flag = calculate_flag(
+            result,
+            reference
         )
-
-        if flag_match:
-            flag = flag_match.group()
 
         parsed_results.append({
             "Test": test_name,
