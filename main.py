@@ -17,13 +17,11 @@ def calculate_flag(result, reference_range):
 
         ref_str = preprocess_numeric(reference_range)
 
-        match = re.search(r"(\d+(?:\.\d+)?)\s*(?:[-–])\s*(\d+(?:\.\d+)?)", ref_str)
-
+        match = re.search(r"(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)", ref_str)
         if match:
             low = float(match.group(1))
             high = float(match.group(2))
             low, high = min(low, high), max(low, high)
-
             if value < low:
                 return "Low"
             elif value > high:
@@ -42,6 +40,7 @@ def calculate_flag(result, reference_range):
 
     except (ValueError, TypeError):
         return "Unknown"
+
 
 client = openai.OpenAI(
    base_url="https://openrouter.ai/api/v1",
