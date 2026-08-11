@@ -277,7 +277,7 @@ if uploaded_file is not None:
             "Result": result,
             "Unit": unit,
             "Reference Range": reference,
-            "Flag": flag,
+            "Flag": calculated_flag,
             "Page": table_info["page"],
             "Source": "Table"
         })
